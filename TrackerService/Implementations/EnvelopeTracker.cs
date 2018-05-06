@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.Extensions.Logging;
 using Tracker.DAL.Interfaces;
+using Tracker.DAL.Tables;
 using TrackerService.Base;
 using TrackerService.DTO;
 using TrackerService.Interfaces;
@@ -21,17 +22,34 @@ namespace TrackerService.Implementations
             this.mapper = mapper;
             this.envelopeRepository = envelopeRepo;
         }
-        
+
         public ServiceResult CreateEnvelope(string envelopeName, decimal startingBalance)
+        {
+            ServiceResult result = ValidateEnvelopeInformation(envelopeName, startingBalance);
+
+            if (result.IsSuccess)
+            {
+                result.Data = new MoneyEnvelopeDto()
+                {
+                    Name = envelopeName,
+                    StartingBalance = startingBalance,
+                    AvailableBalance = startingBalance
+                };
+
+                Envelope envelopeRecord = mapper.Map<Envelope>(result.Data);
+                
+                
+            }
+
+            return result;
+        }
+
+        private ServiceResult ValidateEnvelopeInformation(string envelopeName, decimal startingBalance)
         {
             ServiceResult result = new ServiceResult();
 
-            result.Data = new MoneyEnvelopeDto()
-            {
-                Name = envelopeName,
-                StartingBalance = startingBalance,
-                AvailableBalance = startingBalance
-            };
+            if (string.IsNullOrWhiteSpace(envelopeName))
+                result.AddErrorMessage("Envelope must have a name.");
             
             return result;
         }

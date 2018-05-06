@@ -41,9 +41,13 @@ namespace TrackerService.Tests
             
             MoneyEnvelopeDto envelope = (MoneyEnvelopeDto)createResult.Data;
 
+            envelope.Id.Should().BePositive();
             envelope.Name.Should().Be(envelopeName);
             envelope.StartingBalance.Should().Be(startingBalance);
             envelope.AvailableBalance.Should().Be(startingBalance);
+
+            var envelopeRecord = envelopeRepo.GetEnvelopeById(envelope.Id);
+            envelopeRecord.Should().NotBeNull();
         }
 
         private IEnvelopeTracker CreateEnvelopeTrackerService(IEnvelopeRepository envelopeRepo)
@@ -64,23 +68,30 @@ namespace TrackerService.Tests
             return mapConfig.CreateMapper();
         }
 
-//        [Fact]
-//        public void CreateNewEnvelope_InvalidName_NotCreated()
+        [Fact]
+        public void CreateNewEnvelope_InvalidName_NotCreated()
+        {
+            IEnvelopeTracker tracker = CreateEnvelopeTrackerService(new MockEnvelopeRepository());
+
+            string envelopeName = string.Empty;
+            decimal startingBalance = 100.00M;
+
+            ServiceResult createResult = tracker.CreateEnvelope(envelopeName, startingBalance);
+
+            createResult.Should().NotBeNull();
+            createResult.IsSuccess.Should().BeFalse();
+            createResult.Errors.Should().NotBeNull();
+            createResult.Errors.Count.Should().Be(1);
+            createResult.Errors[0].Should().Be("Envelope must have a name.");
+            createResult.Data.Should().BeNull();
+        }
+
+//        [Theory]
+//        [InlineData(0)]
+//        [InlineData(-100.00M)]
+//        public void CreateNewEnvelope_InvalidStartingBalance_NotCreated(decimal startingBalance)
 //        {
-//            IEnvelopeTracker tracker = new EnvelopeTracker();
-//
-//            string envelopeName = "";
-//            decimal startingBalance = 100.00M;
-//
-//            ServiceResult createResult = tracker.CreateEnvelope(envelopeName, startingBalance);
-//
-//            createResult.Should().NotBeNull();
-//            createResult.IsSuccess.Should().BeFalse();
-//            createResult.Errors.Should().NotBeNull();
-//            createResult.Errors.Count.Should().Be(1);
-//            createResult.Errors[0].Should().Be("Envelope must have a name.");
-//            createResult.Data.Should().BeNull();
-//
+//            IEnvelopeTracker tracker = CreateEnvelopeTrackerService(new MockEnvelopeRepository());
 //        }
         
     }
