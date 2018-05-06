@@ -10,8 +10,8 @@ namespace TrackerService.Base
         }
 
         public List<string> Errors { get; set; } = new List<string>();
-        
-        public object Data { get; set; }
+
+        public object Data { get; set; } = null;
 
         public void AddErrorMessage(string error)
         {
