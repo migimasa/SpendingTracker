@@ -4,6 +4,5 @@
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="Implementations" />
-    <Folder Include="Tables" />
   </ItemGroup>
 </Project>
