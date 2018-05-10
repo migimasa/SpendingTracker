@@ -1,10 +1,12 @@
 using System;
+using System.Threading.Tasks;
 using AutoMapper;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Tracker.DAL.Interfaces;
 using TrackerService.Base;
 using TrackerService.DTO;
+using TrackerService.Enums;
 using TrackerService.Interfaces;
 using TrackerService.Implementations;
 using TrackerService.Mappings;
@@ -29,25 +31,26 @@ namespace TrackerService.Tests
 
             string envelopeName = "TEST_ENVELOPE";
             decimal startingBalance = 100.00M;
+            BalanceRolloverType rolloverType = BalanceRolloverType.ApplyToSurplus;
             
-            ServiceResult createResult = tracker.CreateEnvelope(envelopeName, startingBalance);
+            ServiceResult createResult = tracker.CreateEnvelope(envelopeName, startingBalance, rolloverType);
 
             createResult.Should().NotBeNull();
             createResult.IsSuccess.Should().BeTrue();
             createResult.Errors.Should().NotBeNull();
             createResult.Errors.Should().BeEmpty();
             createResult.Data.Should().NotBeNull();
-            createResult.Data.Should().BeOfType<MoneyEnvelopeDto>();
-            
-            MoneyEnvelopeDto envelope = (MoneyEnvelopeDto)createResult.Data;
+            createResult.Data.Should().BeOfType<int>();
 
-            envelope.Id.Should().BePositive();
-            envelope.Name.Should().Be(envelopeName);
-            envelope.StartingBalance.Should().Be(startingBalance);
-            envelope.AvailableBalance.Should().Be(startingBalance);
+            int id = (int)createResult.Data;
 
-            var envelopeRecord = envelopeRepo.GetEnvelopeById(envelope.Id);
+            var envelopeRecord = envelopeRepo.GetEnvelopeById(id);
             envelopeRecord.Should().NotBeNull();
+            envelopeRecord.Id.Should().BePositive();
+            envelopeRecord.Name.Should().Be(envelopeName);
+            envelopeRecord.StartingBalance.Should().Be(startingBalance);
+            envelopeRecord.AvailableBalance.Should().Be(startingBalance);
+            envelopeRecord.RolloverType.Should().Be(rolloverType.Value);
         }
 
         private IEnvelopeTracker CreateEnvelopeTrackerService(IEnvelopeRepository envelopeRepo)
@@ -71,28 +74,93 @@ namespace TrackerService.Tests
         [Fact]
         public void CreateNewEnvelope_InvalidName_NotCreated()
         {
-            IEnvelopeTracker tracker = CreateEnvelopeTrackerService(new MockEnvelopeRepository());
+            IEnvelopeTracker tracker = CreateEnvelopeTrackerService();
 
             string envelopeName = string.Empty;
             decimal startingBalance = 100.00M;
+            BalanceRolloverType rolloverType = BalanceRolloverType.ApplyToSurplus;
 
-            ServiceResult createResult = tracker.CreateEnvelope(envelopeName, startingBalance);
+            ServiceResult createResult = tracker.CreateEnvelope(envelopeName, startingBalance, rolloverType);
 
             createResult.Should().NotBeNull();
             createResult.IsSuccess.Should().BeFalse();
             createResult.Errors.Should().NotBeNull();
-            createResult.Errors.Count.Should().Be(1);
+            createResult.Errors.Should().HaveCount(1);
             createResult.Errors[0].Should().Be("Envelope must have a name.");
             createResult.Data.Should().BeNull();
         }
 
-//        [Theory]
-//        [InlineData(0)]
-//        [InlineData(-100.00M)]
-//        public void CreateNewEnvelope_InvalidStartingBalance_NotCreated(decimal startingBalance)
-//        {
-//            IEnvelopeTracker tracker = CreateEnvelopeTrackerService(new MockEnvelopeRepository());
-//        }
-        
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-100)]
+        public void CreateNewEnvelope_InvalidStartingBalance_NotCreated(decimal startingBalance)
+        {
+            IEnvelopeTracker tracker = CreateEnvelopeTrackerService();
+
+            string envelopeName = "__TEST_NAME__";
+            BalanceRolloverType rolloverType = BalanceRolloverType.ApplyToSurplus;
+
+            ServiceResult createResult = tracker.CreateEnvelope(envelopeName, startingBalance, rolloverType);
+
+            createResult.Should().NotBeNull();
+            createResult.IsSuccess.Should().BeFalse();
+            createResult.Errors.Should().NotBeNull();
+            createResult.Errors.Should().HaveCount(1);
+            createResult.Errors.Should().Contain("Starting balance must be positive.");
+            createResult.Data.Should().BeNull();
+        }
+
+        [Fact]
+        public void GetEnvelope_ValidEnvelopeId()
+        {
+            var tracker = CreateEnvelopeTrackerService();
+
+            int id = 1;
+
+            MoneyEnvelopeDto envelope = tracker.GetEnvelope(id);
+
+            envelope.Should().NotBeNull();
+            envelope.Name.Should().Be("__TEST_ENVELOPE__");
+            envelope.StartingBalance.Should().Be(50M);
+            envelope.AvailableBalance.Should().Be(25M);
+            envelope.RolloverType.Should().Be(BalanceRolloverType.Unknown);
+        }
+
+        private IEnvelopeTracker CreateEnvelopeTrackerService()
+        {
+            IEnvelopeTracker tracker = CreateEnvelopeTrackerService(new MockEnvelopeRepository());
+            return tracker;
+        }
+
+        [Fact]
+        public void GetEnvelope_InvalidId_ReturnsNull()
+        {
+            var tracker = CreateEnvelopeTrackerService();
+
+            int id = 0;
+
+            var envelope = tracker.GetEnvelope(id);
+
+            envelope.Should().BeNull();
+        }
+
+        [Fact]
+        public void CreateEnvelope_DuplicateName_DoesNotSave()
+        {
+            var tracker = CreateEnvelopeTrackerService();
+            
+            string envelopeName = "__TEST_ENVELOPE__";
+            decimal startingBalance = 100.00M;
+            BalanceRolloverType rolloverType = BalanceRolloverType.ApplyToSurplus;
+
+            ServiceResult createResult = tracker.CreateEnvelope(envelopeName, startingBalance, rolloverType);
+
+            createResult.Should().NotBeNull();
+            createResult.IsSuccess.Should().BeFalse();
+            createResult.Errors.Should().NotBeNullOrEmpty();
+            createResult.Errors.Should().HaveCount(1);
+            createResult.Errors.Should().Contain("__TEST_ENVELOPE__ is already in use. Please select another name.");
+            createResult.Data.Should().BeNull();
+        }
     }
 }
