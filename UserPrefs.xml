@@ -1,5 +1,9 @@
 ﻿<Properties StartupConfiguration="{C95F1EC3-00CD-4D29-850F-1DC88FBCFE3B}|Default">
-  <MonoDevelop.Ide.Workbench />
+  <MonoDevelop.Ide.Workbench ActiveDocument="TrackerService/Interfaces/IFinanceTracker.cs">
+    <Files>
+      <File FileName="TrackerService/Interfaces/IFinanceTracker.cs" Line="5" Column="6" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
     <BreakpointStore />
