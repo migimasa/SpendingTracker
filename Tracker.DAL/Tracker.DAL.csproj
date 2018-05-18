@@ -5,4 +5,8 @@
   <ItemGroup>
     <Folder Include="Implementations" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="NodaTime" Version="2.2.6" />
+    <PackageReference Include="NodaTime.Serialization.JsonNet" Version="2.0.0" />
+  </ItemGroup>
 </Project>
