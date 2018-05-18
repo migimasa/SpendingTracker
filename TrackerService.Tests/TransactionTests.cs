@@ -2,6 +2,8 @@
 using FluentAssertions;
 using TrackerService.Base;
 using TrackerService.DTO;
+using TrackerService.Implementations;
+using TrackerService.Interfaces;
 using Xunit;
 
 namespace TrackerService.Tests
